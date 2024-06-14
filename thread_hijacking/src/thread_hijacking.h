@@ -1,5 +1,7 @@
 #pragma once
-#include "mylib.h"
+#include <Windows.h>
+#include <cstdint>
+#include <mylib.h>
 
 namespace threadhijacking
 {

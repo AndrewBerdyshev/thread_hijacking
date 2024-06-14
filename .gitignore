@@ -6,7 +6,6 @@
 # My addition
 build/
 intermediate/
-.gitignore
 
 # User-specific files
 *.rsuser
