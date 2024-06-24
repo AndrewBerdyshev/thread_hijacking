@@ -19,10 +19,10 @@ void threadhijacking::ThreadHijacking(const HANDLE process, void* remoteOurFunc,
         0x41, 0x55, // push r13
         0x41, 0x56, // push r14
         0x41, 0x57, // push r15
-        0x48, 0x83, 0xec, 0x28, // sub rsp, 40
+        0x48, 0x83, 0xec, 0x28, // sub rsp, 40 // Works fine if rsp address on suspending ends with 8. no reason for alligning then...
 
         // Execute our func.
-        0x48, 0x83, 0xe4, 0xf0, // and rsp, 0xFFFFFFFFFFFFFFF0 - align the stack.
+        //0x48, 0x83, 0xe4, 0xf0, // and rsp, 0xFFFFFFFFFFFFFFF0 - align the stack.
         0x48, 0xb9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // mov rcx, <funcArg>
         0x48, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // mov rax, <funcAddr>
         0xff, 0xd0, // call rax
@@ -52,9 +52,9 @@ void threadhijacking::ThreadHijacking(const HANDLE process, void* remoteOurFunc,
     };
 
     auto funcArg = reinterpret_cast<uint64_t>(param);
-    memcpy(shellcode + 32, &funcArg, 8);
+    memcpy(shellcode + 32-4, &funcArg, 8);
     auto funcAddr = reinterpret_cast<uint64_t>(remoteOurFunc);
-    memcpy(shellcode + 42, &funcAddr, 8);
+    memcpy(shellcode + 42-4, &funcAddr, 8);
 
     // Find a thread, stop thread, fake rip.
     auto threadID = mylib::GetThreadID(GetProcessId(process));
@@ -65,9 +65,9 @@ void threadhijacking::ThreadHijacking(const HANDLE process, void* remoteOurFunc,
     GetThreadContext(thread, &context);
 
     auto ra1 = static_cast<uint32_t>(context.Rip & 0xFFFFFFFF);
-    memcpy(shellcode + 82, &ra1, 4);
+    memcpy(shellcode + 82-4, &ra1, 4);
     auto ra2 = static_cast<uint32_t>(context.Rip >> 32);
-    memcpy(shellcode + 90, &ra2, 4);
+    memcpy(shellcode + 90-4, &ra2, 4);
 
     // Upload shellcode.
     const auto alloc = VirtualAllocEx(process, nullptr, sizeof(shellcode), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
