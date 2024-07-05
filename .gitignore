@@ -6,6 +6,7 @@
 # My addition
 build/
 intermediate/
+test/
 
 # User-specific files
 *.rsuser

@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <cstdint>
 #include <mylib.h>
+#pragma comment(lib, "external\\mylib.lib")
 
 namespace threadhijacking
 {
