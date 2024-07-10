@@ -1,9 +1,10 @@
 #pragma once
 #include <Windows.h>
 #include <cstdint>
-#include <mylib.h>
+#include <handle_hijacking.h>
+#include <iostream>
 
 namespace threadhijacking
 {
-	void ThreadHijacking(const HANDLE process, void* remoteOurFunc, void* param);
+	void ThreadHijacking(IOCTLProcess* process, ThreadProcess* thread, void* remoteOurFunc, void* param);
 }

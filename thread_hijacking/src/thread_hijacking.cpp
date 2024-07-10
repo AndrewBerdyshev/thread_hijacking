@@ -1,6 +1,6 @@
 #include "thread_hijacking.h"
 
-void threadhijacking::ThreadHijacking(const HANDLE process, void* remoteOurFunc, void* param)
+void threadhijacking::ThreadHijacking(IOCTLProcess* process, ThreadProcess* thread, void* remoteOurFunc, void* param)
 {
     // Shellcode to execute remoteourFunc.
     uint8_t shellcode[] = {
@@ -57,26 +57,23 @@ void threadhijacking::ThreadHijacking(const HANDLE process, void* remoteOurFunc,
     memcpy(shellcode + 42-4, &funcAddr, 8);
 
     // Find a thread, stop thread, fake rip.
-    auto threadID = mylib::GetThreadID(GetProcessId(process));
-    auto thread = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT, FALSE, threadID);
-    SuspendThread(thread);
-    CONTEXT context;
-    context.ContextFlags = CONTEXT_FULL;
-    GetThreadContext(thread, &context);
+    auto threadID = thread->GetThreadId();
+    auto tempThread = thread->OpenThread(threadID);
+    thread->SuspendThread(tempThread);
 
-    auto ra1 = static_cast<uint32_t>(context.Rip & 0xFFFFFFFF);
-    memcpy(shellcode + 82-4, &ra1, 4);
-    auto ra2 = static_cast<uint32_t>(context.Rip >> 32);
-    memcpy(shellcode + 90-4, &ra2, 4);
+    const auto alloc = process->Alloc(sizeof(shellcode));
 
-    // Upload shellcode.
-    const auto alloc = VirtualAllocEx(process, nullptr, sizeof(shellcode), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-    WriteProcessMemory(process, alloc, &shellcode, sizeof(shellcode), nullptr);
+    auto rip = reinterpret_cast<uint64_t>(alloc);
+    thread->ChangeRip(tempThread, &rip);
 
-    // Run shellcode.
-    context.Rip = reinterpret_cast<uint64_t>(alloc);
-    SetThreadContext(thread, &context);
-    ResumeThread(thread);
-    CloseHandle(thread);
-    VirtualFreeEx(process, alloc, sizeof(shellcode), MEM_RELEASE);
+    auto ra1 = static_cast<uint32_t>(rip & 0xFFFFFFFF);
+    memcpy(shellcode + 82 - 4, &ra1, 4);
+    auto ra2 = static_cast<uint32_t>(rip >> 32);
+    memcpy(shellcode + 90 - 4, &ra2, 4);
+
+    process->Write(alloc, reinterpret_cast<uint8_t*>(&shellcode), sizeof(shellcode));
+
+    thread->ResumeThread(tempThread);
+    thread->CloseHandle(tempThread);
+    process->Free(alloc, sizeof(shellcode));
 }
