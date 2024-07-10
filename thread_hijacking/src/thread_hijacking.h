@@ -2,7 +2,6 @@
 #include <Windows.h>
 #include <cstdint>
 #include <handle_hijacking.h>
-#include <iostream>
 
 namespace threadhijacking
 {
